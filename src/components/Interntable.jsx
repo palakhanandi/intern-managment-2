@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { Pencil, Trash2 } from "lucide-react"
 
 export default function InternTable({
@@ -21,56 +22,71 @@ export default function InternTable({
 
   if (interns.length === 0) {
     return (
-      <div className="text-center text-muted-foreground py-10">
-        No interns found
-      </div>
+      <Card>
+        <div className="text-center text-muted-foreground py-12 px-6">
+          <p className="text-lg font-medium">No interns found</p>
+          <p className="text-sm mt-1">Add your first intern to get started</p>
+        </div>
+      </Card>
     )
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead>Domain</TableHead>
-          <TableHead>Start Date</TableHead>
-          <TableHead>Duration</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-
-      <TableBody>
-        {interns.map((intern) => (
-          <TableRow key={intern.id} className="hover:bg-muted/50">
-            <TableCell className="font-medium">{intern.name}</TableCell>
-            <TableCell>{intern.email}</TableCell>
-            <TableCell>{intern.domain}</TableCell>
-            <TableCell>{intern.startDate}</TableCell>
-            <TableCell>{intern.duration}</TableCell>
-            <TableCell className="text-right space-x-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  setEditingIntern(intern)
-                  setOpen(true)
-                }}
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-
-              <Button
-                variant="destructive"
-                size="icon"
-                onClick={() => handleDelete(intern.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </TableCell>
+    <Card>
+      <div className="p-6">
+        <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="font-semibold">Name</TableHead>
+            <TableHead className="font-semibold">Email</TableHead>
+            <TableHead className="font-semibold">Domain</TableHead>
+            <TableHead className="font-semibold">Start Date</TableHead>
+            <TableHead className="font-semibold">Duration</TableHead>
+            <TableHead className="text-right font-semibold">Actions</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+
+        <TableBody>
+          {interns.map((intern) => (
+            <TableRow key={intern.id} className="hover:bg-muted/50 transition-colors">
+              <TableCell className="font-medium">{intern.name}</TableCell>
+              <TableCell className="text-muted-foreground">{intern.email}</TableCell>
+              <TableCell>
+                <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                  {intern.domain}
+                </span>
+              </TableCell>
+              <TableCell>{intern.startDate}</TableCell>
+              <TableCell>{intern.duration}</TableCell>
+              <TableCell className="text-right">
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setEditingIntern(intern)
+                      setOpen(true)
+                    }}
+                    className="h-8 w-8"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => handleDelete(intern.id)}
+                    className="h-8 w-8"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      </div>
+    </Card>
   )
 }

@@ -1,10 +1,10 @@
 import { useState } from "react"
 import AdminLayout from "@/layouts/AdminLayout"
+import InternTable from "@/components/Interntable"
 import AddInternDialog from "@/components/AddInternDialog"
-import InternTable from "@/components/InternTable"
 import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
 import { Search } from "lucide-react"
-import "../style/admin.css";
 
 
 export default function InternManagement() {
@@ -23,12 +23,10 @@ export default function InternManagement() {
     <AdminLayout>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* HEADER */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-primary">
-              Intern Management
-            </h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-3xl font-bold tracking-tight">Intern Management</h1>
+            <p className="text-muted-foreground mt-1.5">
               Manage interns, update details or remove them
             </p>
           </div>
@@ -44,28 +42,17 @@ export default function InternManagement() {
         </div>
 
         {/* SEARCH */}
-        <div className="flex items-center">
+        <Card className="p-4">
           <div className="relative w-full max-w-md">
-            <Search className="pl-10 rounded-xl bg-background/80 backdrop-blur"
- />
-
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search interns by name or email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="
-                pl-10
-                rounded-xl
-                border-muted
-                shadow-sm
-                focus-visible:ring-2
-                focus-visible:ring-primary
-                focus-visible:ring-offset-0
-                transition
-              "
+              className="pl-10"
             />
           </div>
-        </div>
+        </Card>
 
         {/* TABLE */}
         <InternTable

@@ -1,11 +1,15 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
 export default function DashboardCard({ icon: Icon, title, description }) {
   return (
-    <div className="rounded-xl border bg-background p-6 shadow-sm hover:shadow-md transition">
-      <Icon className="mb-4 h-10 w-10 text-primary" />
-      <h3 className="text-lg font-semibold">{title}</h3>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {description}
-      </p>
-    </div>
+    <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
+      <CardHeader>
+        <div className="mb-2">
+          <Icon className="h-8 w-8 text-primary group-hover:scale-110 transition-transform" />
+        </div>
+        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardDescription className="mt-2">{description}</CardDescription>
+      </CardHeader>
+    </Card>
   )
 }

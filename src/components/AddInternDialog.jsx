@@ -58,30 +58,45 @@ export default function AddInternDialog({
             </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label>Name</Label>
-              <Input name="name" defaultValue={editingIntern?.name || ""} required />
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input 
+                id="name"
+                name="name" 
+                defaultValue={editingIntern?.name || ""} 
+                placeholder="Enter intern name"
+                required 
+              />
             </div>
 
-            <div>
-              <Label>Email</Label>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
               <Input
+                id="email"
                 name="email"
                 type="email"
+                placeholder="Enter email address"
                 defaultValue={editingIntern?.email || ""}
                 required
               />
             </div>
 
-            <div>
-              <Label>Domain</Label>
-              <Input name="domain" defaultValue={editingIntern?.domain || ""} required />
+            <div className="space-y-2">
+              <Label htmlFor="domain">Domain</Label>
+              <Input 
+                id="domain"
+                name="domain" 
+                placeholder="e.g., Web Development, Data Science"
+                defaultValue={editingIntern?.domain || ""} 
+                required 
+              />
             </div>
 
-            <div>
-              <Label>Start Date</Label>
+            <div className="space-y-2">
+              <Label htmlFor="startDate">Start Date</Label>
               <Input
+                id="startDate"
                 name="startDate"
                 type="date"
                 defaultValue={editingIntern?.startDate || ""}
@@ -89,16 +104,18 @@ export default function AddInternDialog({
               />
             </div>
 
-            <div>
-              <Label>Duration</Label>
+            <div className="space-y-2">
+              <Label htmlFor="duration">Duration</Label>
               <Input
+                id="duration"
                 name="duration"
+                placeholder="e.g., 3 months, 6 months"
                 defaultValue={editingIntern?.duration || ""}
                 required
               />
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-3 pt-2">
               <Button
                 type="button"
                 variant="outline"
@@ -110,7 +127,7 @@ export default function AddInternDialog({
                 Cancel
               </Button>
               <Button type="submit">
-                {editingIntern ? "Update" : "Save"}
+                {editingIntern ? "Update Intern" : "Add Intern"}
               </Button>
             </div>
           </form>

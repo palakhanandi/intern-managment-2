@@ -25,7 +25,7 @@ export const internMenu = [
 export const adminMenu = [
   {
     label: "Dashboard",
-    path: "/admin/dashboard",
+    path: "/admin",
     icon: Home,
   },
   {
