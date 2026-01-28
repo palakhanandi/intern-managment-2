@@ -1,17 +1,37 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import AdminLayout from "@/layouts/AdminLayout"
 import InternTable from "@/components/Interntable"
 import AddInternDialog from "@/components/AddInternDialog"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Search } from "lucide-react"
-
+import { supabase } from "@/lib/supabase"
 
 export default function InternManagement() {
   const [search, setSearch] = useState("")
   const [interns, setInterns] = useState([])
   const [editingIntern, setEditingIntern] = useState(null)
   const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchInterns()
+  }, [])
+
+  async function fetchInterns() {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from("interns")
+      .select("*")
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("Error fetching interns:", error)
+    } else {
+      setInterns(data)
+    }
+    setLoading(false)
+  }
 
   const filteredInterns = interns.filter(
     (intern) =>
@@ -22,10 +42,13 @@ export default function InternManagement() {
   return (
     <AdminLayout>
       <div className="max-w-7xl mx-auto space-y-6">
+
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Intern Management</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Intern Management
+            </h1>
             <p className="text-muted-foreground mt-1.5">
               Manage interns, update details or remove them
             </p>
@@ -38,13 +61,14 @@ export default function InternManagement() {
             setInterns={setInterns}
             editingIntern={editingIntern}
             setEditingIntern={setEditingIntern}
+            fetchInterns={fetchInterns}   // ✅ NEW
           />
         </div>
 
         {/* SEARCH */}
         <Card className="p-4">
           <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search interns by name or email..."
               value={search}
@@ -57,9 +81,10 @@ export default function InternManagement() {
         {/* TABLE */}
         <InternTable
           interns={filteredInterns}
-          setInterns={setInterns}
           setEditingIntern={setEditingIntern}
           setOpen={setOpen}
+          fetchInterns={fetchInterns}   // ✅ NEW
+          loading={loading}
         />
       </div>
     </AdminLayout>
