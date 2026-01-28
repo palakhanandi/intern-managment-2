@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import AdminLayout from "@/layouts/AdminLayout"
 import DashboardCard from "@/components/DashboardCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,18 +12,92 @@ import {
   CheckCircle2,
   Clock,
 } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 export default function AdminDashboard() {
-  const stats = [
-    { label: "Total Interns", value: "24", icon: Users, trend: "+12%" },
-    { label: "Active Tasks", value: "18", icon: ClipboardList, trend: "+5" },
-    { label: "Attendance Rate", value: "94%", icon: CalendarCheck, trend: "+2%" },
-    { label: "Certificates Issued", value: "15", icon: Award, trend: "+3" },
+  const [stats, setStats] = useState({
+    interns: 0,
+    tasks: 0,
+    attendanceRate: 0,
+    certificates: 0,
+    presentToday: 0,
+  })
+
+  const today = new Date().toISOString().split("T")[0]
+
+  useEffect(() => {
+    fetchDashboardStats()
+  }, [])
+
+  const fetchDashboardStats = async () => {
+    /* ---------- TOTAL INTERNS ---------- */
+    const { count: internCount } = await supabase
+      .from("interns")
+      .select("*", { count: "exact", head: true })
+
+    /* ---------- ACTIVE TASKS ---------- */
+    const { count: taskCount } = await supabase
+      .from("tasks")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "Active")
+
+    /* ---------- ATTENDANCE TODAY ---------- */
+    const { data: attendanceToday } = await supabase
+      .from("attendance")
+      .select("status")
+      .eq("date", today)
+
+    const presentCount =
+      attendanceToday?.filter(a => a.status === "Present").length || 0
+
+    const attendanceRate =
+      internCount > 0 ? Math.round((presentCount / internCount) * 100) : 0
+
+    /* ---------- CERTIFICATES ---------- */
+    const { count: certificateCount } = await supabase
+      .from("certificates")
+      .select("*", { count: "exact", head: true })
+
+    setStats({
+      interns: internCount || 0,
+      tasks: taskCount || 0,
+      attendanceRate,
+      certificates: certificateCount || 0,
+      presentToday: presentCount,
+    })
+  }
+
+  const statCards = [
+    {
+      label: "Total Interns",
+      value: stats.interns,
+      icon: Users,
+      trend: "+",
+    },
+    {
+      label: "Active Tasks",
+      value: stats.tasks,
+      icon: ClipboardList,
+      trend: "+",
+    },
+    {
+      label: "Attendance Rate",
+      value: `${stats.attendanceRate}%`,
+      icon: CalendarCheck,
+      trend: "+",
+    },
+    {
+      label: "Certificates Issued",
+      value: stats.certificates,
+      icon: Award,
+      trend: "+",
+    },
   ]
 
   return (
     <AdminLayout>
       <div className="space-y-6">
+        {/* Header */}
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
@@ -30,19 +105,21 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => (
+          {statCards.map(stat => (
             <Card key={stat.label}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {stat.label}
+                </CardTitle>
                 <stat.icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                   <TrendingUp className="h-3 w-3 text-green-500" />
-                  {stat.trend} from last month
+                  Live data
                 </p>
               </CardContent>
             </Card>
@@ -81,27 +158,27 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Activity Section */}
         <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle>Recent Tasks</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <ClipboardList className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Task #{i}</p>
-                      <p className="text-xs text-muted-foreground">Assigned to intern</p>
-                    </div>
-                    <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardContent className="space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="flex items-center gap-4">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <ClipboardList className="h-5 w-5 text-primary" />
                   </div>
-                ))}
-              </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Task #{i}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Assigned to intern
+                    </p>
+                  </div>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </div>
+              ))}
             </CardContent>
           </Card>
 
@@ -109,19 +186,26 @@ export default function AdminDashboard() {
             <CardHeader>
               <CardTitle>Attendance Overview</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Present Today</span>
-                  <span className="text-sm font-semibold">22/24</span>
-                </div>
-                <div className="w-full bg-muted rounded-full h-2">
-                  <div className="bg-primary h-2 rounded-full" style={{ width: "92%" }}></div>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <span>2 interns absent</span>
-                </div>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Present Today</span>
+                <span className="text-sm font-semibold">
+                  {stats.presentToday}/{stats.interns}
+                </span>
+              </div>
+
+              <div className="w-full bg-muted rounded-full h-2">
+                <div
+                  className="bg-primary h-2 rounded-full"
+                  style={{ width: `${stats.attendanceRate}%` }}
+                />
+              </div>
+
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <span>
+                  {stats.interns - stats.presentToday} interns absent
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -130,3 +214,4 @@ export default function AdminDashboard() {
     </AdminLayout>
   )
 }
+

@@ -3,40 +3,60 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
+
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Plus } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 export default function AddInternDialog({
   open,
   setOpen,
-  interns,
-  setInterns,
   editingIntern,
   setEditingIntern,
+  fetchInterns, // ✅ NEW
 }) {
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     const form = e.target
 
     const internData = {
-      id: editingIntern ? editingIntern.id : Date.now(),
       name: form.name.value,
       email: form.email.value,
       domain: form.domain.value,
-      startDate: form.startDate.value,
+      start_date: form.startDate.value,
       duration: form.duration.value,
     }
 
     if (editingIntern) {
-      setInterns((prev) =>
-        prev.map((i) => (i.id === editingIntern.id ? internData : i))
-      )
+      // ✏️ UPDATE
+      const { error } = await supabase
+        .from("interns")
+        .update(internData)
+        .eq("id", editingIntern.id)
+
+      if (error) {
+        alert("Error updating intern")
+        console.error(error)
+        return
+      }
     } else {
-      setInterns((prev) => [...prev, internData])
+      // ➕ INSERT
+      const { error } = await supabase
+        .from("interns")
+        .insert([internData])
+
+      if (error) {
+        alert("Error adding intern")
+        console.error(error)
+        return
+      }
     }
+
+    await fetchInterns() // 🔄 refresh list
 
     setOpen(false)
     setEditingIntern(null)
@@ -56,60 +76,58 @@ export default function AddInternDialog({
             <DialogTitle>
               {editingIntern ? "Edit Intern" : "Add Intern"}
             </DialogTitle>
+
+            <DialogDescription>
+              {editingIntern
+                ? "Update intern details such as name, email, domain, start date, and duration."
+                : "Enter intern details such as name, email, domain, start date, and duration."}
+            </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input 
-                id="name"
-                name="name" 
-                defaultValue={editingIntern?.name || ""} 
-                placeholder="Enter intern name"
-                required 
+              <Label>Name</Label>
+              <Input
+                name="name"
+                defaultValue={editingIntern?.name || ""}
+                required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label>Email</Label>
               <Input
-                id="email"
                 name="email"
                 type="email"
-                placeholder="Enter email address"
                 defaultValue={editingIntern?.email || ""}
                 required
+                // prevent email change
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="domain">Domain</Label>
-              <Input 
-                id="domain"
-                name="domain" 
-                placeholder="e.g., Web Development, Data Science"
-                defaultValue={editingIntern?.domain || ""} 
-                required 
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date</Label>
+              <Label>Domain</Label>
               <Input
-                id="startDate"
-                name="startDate"
-                type="date"
-                defaultValue={editingIntern?.startDate || ""}
+                name="domain"
+                defaultValue={editingIntern?.domain || ""}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="duration">Duration</Label>
+              <Label>Start Date</Label>
               <Input
-                id="duration"
+                name="startDate"
+                type="date"
+                defaultValue={editingIntern?.start_date || ""}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Duration</Label>
+              <Input
                 name="duration"
-                placeholder="e.g., 3 months, 6 months"
                 defaultValue={editingIntern?.duration || ""}
                 required
               />
@@ -126,6 +144,7 @@ export default function AddInternDialog({
               >
                 Cancel
               </Button>
+
               <Button type="submit">
                 {editingIntern ? "Update Intern" : "Add Intern"}
               </Button>
@@ -136,4 +155,6 @@ export default function AddInternDialog({
     </>
   )
 }
+
+
 

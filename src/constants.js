@@ -10,6 +10,7 @@ import {
   Award,
   BookOpen,
   LifeBuoy,
+  Shield,
 } from "lucide-react"
 
 export const internMenu = [
@@ -52,6 +53,11 @@ export const adminMenu = [
     label: "Reports & Analytics",
     path: "/admin/reports",
     icon: BarChart3,
+  },
+  {
+    label: "Role-Control",
+    path: "/admin/role",
+    icon: Shield,
   },
   {
     label: "Settings",

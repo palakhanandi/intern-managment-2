@@ -1,92 +1,91 @@
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Pencil, Trash2 } from "lucide-react"
+import { Trash2, Pencil } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 export default function InternTable({
   interns,
-  setInterns,
   setEditingIntern,
   setOpen,
+  fetchInterns,
+  loading,
 }) {
-  function handleDelete(id) {
-    setInterns((prev) => prev.filter((i) => i.id !== id))
+  async function handleDelete(id) {
+    const confirmDelete = confirm("Are you sure you want to delete this intern?")
+    if (!confirmDelete) return
+
+    const { error } = await supabase
+      .from("interns")
+      .delete()
+      .eq("id", id)
+
+    if (error) {
+      alert("Failed to delete intern")
+      console.error(error)
+    } else {
+      fetchInterns()
+    }
   }
 
-  if (interns.length === 0) {
+  if (loading) {
+    return <p className="text-center text-muted-foreground">Loading interns...</p>
+  }
+
+  if (!interns.length) {
     return (
-      <Card>
-        <div className="text-center text-muted-foreground py-12 px-6">
-          <p className="text-lg font-medium">No interns found</p>
-          <p className="text-sm mt-1">Add your first intern to get started</p>
-        </div>
-      </Card>
+      <p className="text-center text-muted-foreground py-10">
+        No interns found
+      </p>
     )
   }
 
   return (
-    <Card>
-      <div className="p-6">
-        <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="font-semibold">Name</TableHead>
-            <TableHead className="font-semibold">Email</TableHead>
-            <TableHead className="font-semibold">Domain</TableHead>
-            <TableHead className="font-semibold">Start Date</TableHead>
-            <TableHead className="font-semibold">Duration</TableHead>
-            <TableHead className="text-right font-semibold">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
+    <div className="rounded-lg border bg-card">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b">
+            <th className="p-3 text-left">Name</th>
+            <th className="p-3 text-left">Email</th>
+            <th className="p-3 text-left">Domain</th>
+            <th className="p-3 text-left">Start Date</th>
+            <th className="p-3 text-left">Duration</th>
+            <th className="p-3 text-right">Actions</th>
+          </tr>
+        </thead>
 
-        <TableBody>
+        <tbody>
           {interns.map((intern) => (
-            <TableRow key={intern.id} className="hover:bg-muted/50 transition-colors">
-              <TableCell className="font-medium">{intern.name}</TableCell>
-              <TableCell className="text-muted-foreground">{intern.email}</TableCell>
-              <TableCell>
-                <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                  {intern.domain}
-                </span>
-              </TableCell>
-              <TableCell>{intern.startDate}</TableCell>
-              <TableCell>{intern.duration}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => {
-                      setEditingIntern(intern)
-                      setOpen(true)
-                    }}
-                    className="h-8 w-8"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
+            <tr key={intern.id} className="border-b last:border-0">
+              <td className="p-3">{intern.name}</td>
+              <td className="p-3">{intern.email}</td>
+              <td className="p-3">{intern.domain}</td>
+              <td className="p-3">{intern.start_date}</td>
+              <td className="p-3">{intern.duration}</td>
 
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => handleDelete(intern.id)}
-                    className="h-8 w-8"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
+              <td className="p-3 text-right space-x-2">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => {
+                    setEditingIntern(intern)
+                    setOpen(true)
+                  }}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  onClick={() => handleDelete(intern.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </td>
+            </tr>
           ))}
-        </TableBody>
-      </Table>
-      </div>
-    </Card>
+        </tbody>
+      </table>
+    </div>
   )
 }
+
