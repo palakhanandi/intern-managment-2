@@ -1,16 +1,73 @@
-# React + Vite
+# Intern Management Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A **role-based intern management system** built with **React + Vite**, **Firebase Authentication**, and **Supabase** for backend data storage. The application provides separate **Admin** and **Intern** dashboards with features like intern management, task management, attendance, certificates, and reports.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Tech Stack
 
-## React Compiler
+### Frontend
+- React 19 (Vite)
+- React Router DOM v7
+- Tailwind CSS
+- shadcn/ui
+- Lucide Icons
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Backend / Services
+- Firebase Authentication
+- Firestore (role metadata)
+- Supabase (PostgreSQL database)
 
-## Expanding the ESLint configuration
+### Tooling
+- Vite
+- ESLint
+- PostCSS
+- TailwindCSS
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 📁 Project Structure
+intern-managment-2-main/
+├── public/
+├── src/
+│ ├── components/ # Reusable UI components
+│ ├── layouts/ # AdminLayout, InternLayout
+│ ├── pages/ # Dashboard pages
+│ ├── lib/
+│ │ └── supabase.js # Supabase client
+│ ├── firebase.jsx # Firebase configuration
+│ ├── App.jsx
+│ └── main.jsx
+├── index.html
+├── package.json
+├── tailwind.config.js
+├── vite.config.js
+└── .env
+
+---
+
+## ⚙️ Prerequisites
+
+- Node.js >= 18
+- npm or yarn
+- Firebase Setup
+- Supabase Setup
+
+---
+
+## 🔐 Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key
+
+
