@@ -75,8 +75,8 @@ export default function Login() {
       }
 
     } catch (err) {
-      alert(err.message)
-    } finally {
+      console.error("Login error:", err)
+      alert("Invalid email or password")    } finally {
       setLoading(false)
     }
   }
