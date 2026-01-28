@@ -70,4 +70,4 @@ VITE_FIREBASE_APP_ID=your_app_id
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_anon_key
 
-
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/palakhanandi/intern-managment-2?utm_source=oss&utm_medium=github&utm_campaign=palakhanandi%2Fintern-managment-2&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
