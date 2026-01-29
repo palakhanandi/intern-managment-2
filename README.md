@@ -26,24 +26,6 @@ A **role-based intern management system** built with **React + Vite**, **Firebas
 
 ---
 
-## 📁 Project Structure
-intern-managment-2-main/
-├── public/
-├── src/
-│ ├── components/ # Reusable UI components
-│ ├── layouts/ # AdminLayout, InternLayout
-│ ├── pages/ # Dashboard pages
-│ ├── lib/
-│ │ └── supabase.js # Supabase client
-│ ├── firebase.jsx # Firebase configuration
-│ ├── App.jsx
-│ └── main.jsx
-├── index.html
-├── package.json
-├── tailwind.config.js
-├── vite.config.js
-└── .env
-
 ---
 
 ## ⚙️ Prerequisites
