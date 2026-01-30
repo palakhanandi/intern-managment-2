@@ -17,6 +17,7 @@ export default function AdminAttendance() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0])
   const [search, setSearch] = useState("")
   const [attendance, setAttendance] = useState([])
+  const [totalInterns, setTotalInterns] = useState(0) // ✅ NEW
   const [loading, setLoading] = useState(true)
 
   // 🔹 Fetch attendance for selected date
@@ -45,8 +46,18 @@ export default function AdminAttendance() {
     setLoading(false)
   }
 
+  // 🔹 Fetch TOTAL interns (from interns table)
+  const fetchTotalInterns = async () => {
+    const { count } = await supabase
+      .from("interns")
+      .select("*", { count: "exact", head: true })
+
+    setTotalInterns(count || 0)
+  }
+
   useEffect(() => {
     fetchAttendance()
+    fetchTotalInterns()
   }, [date])
 
   // 🔍 Search filter
@@ -55,15 +66,13 @@ export default function AdminAttendance() {
     record.interns?.email?.toLowerCase().includes(search.toLowerCase())
   )
 
-  // 📊 Stats
-  const totalInterns = attendance.length
+  // 📊 Stats (FIXED)
   const presentCount = attendance.filter(a => a.status === "Present").length
   const absentCount = totalInterns - presentCount
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Attendance Tracking</h1>
           <p className="text-muted-foreground mt-1.5">
@@ -71,14 +80,12 @@ export default function AdminAttendance() {
           </p>
         </div>
 
-        {/* Stats */}
         <div className="grid gap-4 md:grid-cols-3">
           <StatCard title="Total Interns" value={totalInterns} icon={Calendar} />
           <StatCard title="Present" value={presentCount} icon={CheckCircle2} color="green" />
           <StatCard title="Absent" value={absentCount} icon={XCircle} color="red" />
         </div>
 
-        {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <Card className="p-4 flex-1">
             <div className="relative">
@@ -101,7 +108,6 @@ export default function AdminAttendance() {
           </Card>
         </div>
 
-        {/* Attendance Table */}
         <Card>
           <CardHeader>
             <CardTitle>Attendance Records</CardTitle>
@@ -198,5 +204,7 @@ const StatusBadge = ({ status }) => (
     )}
   </span>
 )
+
+
 
 
