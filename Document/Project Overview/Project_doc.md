@@ -22,23 +22,23 @@ Manual management of interns is inefficient and error-prone. Tracking intern tas
 ## Features
 
 Admin dashboard =>
-InternManagement ( CRUD ) 
-Task Management
-Attendance Tracking
-Certificate Management
-Intern Resources
-Report and analytics 
-Role Control
-Settings 
+-InternManagement ( CRUD ) 
+-Task Management
+-Attendance Tracking
+-Certificate Management
+-Intern Resources
+-Report and analytics 
+-Role Control
+-Settings 
 
-Intern Dashboard=>
-Profile
-Task Section
-Attendance
-Learning Resources
-Certificate
-Support
-Settings
+Intern Dashboard =>
+-Profile
+-Task Section
+-Attendance
+-Learning Resources
+-Certificate
+-Support
+-Settings
 
 
 ---
