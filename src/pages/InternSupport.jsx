@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import InternLayout from "@/layouts/InternLayout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,15 +12,91 @@ import {
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LifeBuoy, MessageSquare, Send, Mail, Phone, HelpCircle } from "lucide-react"
+import { supabase } from "@/lib/supabase"
+import keycloak from "@/Keycloak"
 
 export default function InternSupport() {
   const [open, setOpen] = useState(false)
-  
-  const tickets = [
-    { id: 1, subject: "Login Issue", status: "open", date: "2024-01-15", priority: "high" },
-    { id: 2, subject: "Task Assignment Question", status: "resolved", date: "2024-01-10", priority: "medium" },
-    { id: 3, subject: "Certificate Download", status: "open", date: "2024-01-12", priority: "low" },
-  ]
+  const [intern, setIntern] = useState(null)
+  const [tickets, setTickets] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const [formData, setFormData] = useState({
+    subject: "",
+    category: "",
+    priority: "",
+    description: "",
+  })
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const email = keycloak?.tokenParsed?.email
+        if (!email) return
+
+        // Fetch Intern using email
+        const { data: internData, error: internError } = await supabase
+          .from("interns")
+          .select("*")
+          .eq("email", email)
+          .single()
+
+        if (internError) throw internError
+        setIntern(internData)
+
+        // Fetch Tickets
+        const { data: ticketData, error: ticketError } = await supabase
+          .from("support_tickets")
+          .select("*")
+          .eq("intern_id", internData.id)
+          .order("created_at", { ascending: false })
+
+        if (ticketError) throw ticketError
+
+        setTickets(ticketData || [])
+      } catch (err) {
+        console.error("Error loading tickets:", err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if (!intern) return
+
+    try {
+      const { error } = await supabase.from("support_tickets").insert([
+        {
+          subject: formData.subject,
+          category: formData.category,
+          priority: formData.priority,
+          description: formData.description,
+          intern_id: intern.id,
+        },
+      ])
+
+      if (error) throw error
+
+      setOpen(false)
+      setFormData({ subject: "", category: "", priority: "", description: "" })
+
+      // Refresh tickets
+      const { data } = await supabase
+        .from("support_tickets")
+        .select("*")
+        .eq("intern_id", intern.id)
+        .order("created_at", { ascending: false })
+
+      setTickets(data || [])
+    } catch (err) {
+      console.error("Error submitting ticket:", err.message)
+    }
+  }
 
   return (
     <InternLayout>
@@ -99,7 +175,9 @@ export default function InternSupport() {
                     </div>
                     <div>
                       <p className="font-medium">{ticket.subject}</p>
-                      <p className="text-sm text-muted-foreground">Created: {ticket.date}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Created: {new Date(ticket.created_at).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -118,7 +196,7 @@ export default function InternSupport() {
           </CardContent>
         </Card>
 
-        {/* FAQ */}
+        {/* FAQ (UNCHANGED) */}
         <Card>
           <CardHeader>
             <CardTitle>Frequently Asked Questions</CardTitle>
@@ -144,14 +222,18 @@ export default function InternSupport() {
             <DialogHeader>
               <DialogTitle>Create Support Ticket</DialogTitle>
             </DialogHeader>
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label>Subject</Label>
-                <Input placeholder="Enter ticket subject" />
+                <Input
+                  value={formData.subject}
+                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  placeholder="Enter ticket subject"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Select>
+                <Select onValueChange={(value) => setFormData({ ...formData, category: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
@@ -164,7 +246,7 @@ export default function InternSupport() {
               </div>
               <div className="space-y-2">
                 <Label>Priority</Label>
-                <Select>
+                <Select onValueChange={(value) => setFormData({ ...formData, priority: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
@@ -177,7 +259,12 @@ export default function InternSupport() {
               </div>
               <div className="space-y-2">
                 <Label>Description</Label>
-                <Input placeholder="Describe your issue" className="h-24" />
+                <Input
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Describe your issue"
+                  className="h-24"
+                />
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
@@ -195,4 +282,7 @@ export default function InternSupport() {
     </InternLayout>
   )
 }
+
+
+
 
