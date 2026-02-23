@@ -4,83 +4,139 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Calendar, CheckCircle2, XCircle, Clock } from "lucide-react"
 import { supabase } from "@/lib/supabase"
-import { getAuth } from "firebase/auth"
+import { useAuth } from "@/AuthContext"
 
 export default function InternAttendance() {
+  const { user } = useAuth()
+
+  // 🔥 KEYCLOAK EMAIL FIX
+  const userEmail =
+    user?.tokenParsed?.email ||
+    user?.profile?.email ||
+    user?.email ||
+    null
+
   const [attendanceData, setAttendanceData] = useState([])
   const [todayAttendance, setTodayAttendance] = useState(null)
   const [intern, setIntern] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  const auth = getAuth()
-  const user = auth.currentUser
-  const firebase_uid = user?.uid
-
   const today = new Date().toISOString().split("T")[0]
 
-  // 🔹 Fetch intern + attendance
+  /* ================= FETCH DATA ================= */
   const fetchAttendance = async () => {
-    if (!firebase_uid) return
+    if (!userEmail) {
+      console.log("❌ No email from Keycloak:", user)
+      setLoading(false)
+      return
+    }
+
+    console.log("✅ Logged in email:", userEmail)
 
     setLoading(true)
 
-    // 1️⃣ Get intern record
-    const { data: internData } = await supabase
+    // 🔹 1️⃣ Find Intern by Email (case-insensitive)
+    const { data: internData, error: internError } = await supabase
       .from("interns")
       .select("*")
-      .eq("firebase_uid", firebase_uid)
-      .single()
+      .ilike("email", userEmail)
+      .maybeSingle()
+
+    if (internError) {
+      console.error("Intern fetch error:", internError)
+      setLoading(false)
+      return
+    }
+
+    if (!internData) {
+      console.error("❌ No intern found with email:", userEmail)
+      setLoading(false)
+      return
+    }
 
     setIntern(internData)
 
-    // 2️⃣ Get attendance
-    const { data: attendance } = await supabase
+    // 🔹 2️⃣ Fetch Attendance
+    const { data: attendance, error: attendanceError } = await supabase
       .from("attendance")
       .select("*")
-      .eq("firebase_uid", firebase_uid)
+      .eq("intern_id", internData.id)
       .order("date", { ascending: false })
 
+    if (attendanceError) {
+      console.error("Attendance fetch error:", attendanceError)
+    }
+
     setAttendanceData(attendance || [])
-    setTodayAttendance(attendance?.find(a => a.date === today) || null)
+    setTodayAttendance(
+      attendance?.find((a) => a.date === today) || null
+    )
 
     setLoading(false)
   }
 
   useEffect(() => {
     fetchAttendance()
-  }, [firebase_uid])
+  }, [userEmail])
 
-  // 🔹 Check In
+  /* ================= CHECK IN ================= */
   const handleCheckIn = async () => {
-    if (!intern) return
+    if (!intern || todayAttendance) return
 
-    await supabase.from("attendance").insert({
+    const currentTime = new Date()
+      .toISOString()
+      .split("T")[1]
+      .split(".")[0]
+
+    const { error } = await supabase.from("attendance").insert({
       intern_id: intern.id,
-      firebase_uid: firebase_uid,
       date: today,
       status: "Present",
-      check_in: new Date().toLocaleTimeString("en-GB")
+      check_in: currentTime,
     })
 
+    if (error) {
+      console.error("Check-in error:", error)
+      return
+    }
+
     fetchAttendance()
   }
 
-  // 🔹 Check Out
+  /* ================= CHECK OUT ================= */
   const handleCheckOut = async () => {
-    await supabase
+    if (!intern) return
+
+    const currentTime = new Date()
+      .toISOString()
+      .split("T")[1]
+      .split(".")[0]
+
+    const { error } = await supabase
       .from("attendance")
       .update({
-        check_out: new Date().toLocaleTimeString("en-GB")
+        check_out: currentTime,
       })
-      .eq("firebase_uid", firebase_uid)
+      .eq("intern_id", intern.id)
       .eq("date", today)
+
+    if (error) {
+      console.error("Check-out error:", error)
+      return
+    }
 
     fetchAttendance()
   }
 
-  // 🔹 Stats
-  const presentCount = attendanceData.filter(a => a.status === "Present").length
-  const absentCount = attendanceData.filter(a => a.status === "Absent").length
+  /* ================= STATS ================= */
+  const presentCount = attendanceData.filter(
+    (a) => a.status === "Present"
+  ).length
+
+  const absentCount = attendanceData.filter(
+    (a) => a.status === "Absent"
+  ).length
+
   const attendanceRate = attendanceData.length
     ? Math.round((presentCount / attendanceData.length) * 100)
     : 0
@@ -96,40 +152,49 @@ export default function InternAttendance() {
   return (
     <InternLayout>
       <div className="space-y-6">
+
         {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Attendance</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Attendance</h1>
           <p className="text-muted-foreground">
-            Track your daily attendance and check-in/out times
+            Track your daily attendance
           </p>
         </div>
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-4">
           <StatCard title="Total Days" value={attendanceData.length} icon={Calendar} />
-          <StatCard title="Present" value={presentCount} icon={CheckCircle2} color="green" />
-          <StatCard title="Absent" value={absentCount} icon={XCircle} color="red" />
-          <StatCard title="Attendance Rate" value={`${attendanceRate}%`} icon={Clock} color="blue" />
+          <StatCard title="Present" value={presentCount} icon={CheckCircle2} variant="green" />
+          <StatCard title="Absent" value={absentCount} icon={XCircle} variant="red" />
+          <StatCard title="Attendance Rate" value={`${attendanceRate}%`} icon={Clock} variant="blue" />
         </div>
 
-        {/* Today's Attendance */}
+        {/* Today */}
         <Card>
           <CardHeader>
             <CardTitle>Today's Attendance</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
+            <div className="flex justify-between flex-wrap gap-4">
+
               <div>
-                <p className="text-sm text-muted-foreground">Status</p>
-                <p className="text-lg font-semibold mt-1">
+                <p>Status</p>
+                <p className="font-semibold">
                   {todayAttendance?.status || "Not Checked In"}
                 </p>
               </div>
 
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Check In</p>
-                <p className="text-lg font-semibold mt-1">
+              <div>
+                <p>Check In</p>
+                <p className="font-semibold">
                   {todayAttendance?.check_in || "-"}
+                </p>
+              </div>
+
+              <div>
+                <p>Check Out</p>
+                <p className="font-semibold">
+                  {todayAttendance?.check_out || "-"}
                 </p>
               </div>
 
@@ -144,87 +209,33 @@ export default function InternAttendance() {
           </CardContent>
         </Card>
 
-        {/* Attendance History */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Attendance History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {attendanceData.map(record => (
-                <div
-                  key={record.id}
-                  className="flex items-center justify-between p-3 rounded-lg border"
-                >
-                  <div className="flex items-center gap-4">
-                    <StatusIcon status={record.status} />
-                    <div>
-                      <p className="font-medium">
-                        {new Date(record.date).toLocaleDateString("en-US", {
-                          weekday: "long",
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric"
-                        })}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {record.status === "Present"
-                          ? `Check In: ${record.check_in || "-"} | Check Out: ${record.check_out || "-"}`
-                          : "Absent"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <StatusBadge status={record.status} />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </InternLayout>
   )
 }
 
-/* ---------- Small UI helpers ---------- */
+/* ================= UI COMPONENT ================= */
 
-const StatCard = ({ title, value, icon: Icon, color }) => (
-  <Card>
-    <CardHeader className="flex flex-row items-center justify-between pb-2">
-      <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <Icon className={`h-4 w-4 text-${color ?? "muted-foreground"}`} />
-    </CardHeader>
-    <CardContent>
-      <div className={`text-2xl font-bold text-${color ?? "foreground"}`}>
-        {value}
-      </div>
-    </CardContent>
-  </Card>
-)
+const StatCard = ({ title, value, icon: Icon, variant }) => {
+  const colors = {
+    green: "text-green-500",
+    red: "text-red-500",
+    blue: "text-blue-500",
+  }
 
-const StatusIcon = ({ status }) => (
-  <div
-    className={`h-10 w-10 rounded-full flex items-center justify-center ${
-      status === "Present" ? "bg-green-100" : "bg-red-100"
-    }`}
-  >
-    {status === "Present" ? (
-      <CheckCircle2 className="h-5 w-5 text-green-600" />
-    ) : (
-      <XCircle className="h-5 w-5 text-red-600" />
-    )}
-  </div>
-)
+  return (
+    <Card>
+      <CardHeader className="flex justify-between pb-2">
+        <CardTitle className="text-sm">{title}</CardTitle>
+        <Icon className={`h-4 w-4 ${colors[variant] || ""}`} />
+      </CardHeader>
+      <CardContent>
+        <div className={`text-2xl font-bold ${colors[variant] || ""}`}>
+          {value}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
-const StatusBadge = ({ status }) => (
-  <span
-    className={`px-3 py-1 rounded-full text-xs font-medium ${
-      status === "Present"
-        ? "bg-green-100 text-green-800"
-        : "bg-red-100 text-red-800"
-    }`}
-  >
-    {status}
-  </span>
-)
 
