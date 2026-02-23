@@ -1,27 +1,22 @@
 import { Navigate } from "react-router-dom"
-import { useAuth } from "./AuthContext"
+import keycloak from "./Keycloak"
 
-export default function ProtectedRoute({ children, allowedRole }) {
-  const { user, role, loading } = useAuth()
+const ProtectedRoute = ({ children, allowedRole }) => {
 
-  // ⏳ WAIT until Firebase finishes loading
-  if (loading) {
-    return <div className="flex h-screen items-center justify-center">
-      Loading...
-    </div>
+  // If not logged in → send to login
+  if (!keycloak.authenticated) {
+    keycloak.login()
+    return null
   }
 
-  // ❌ Not logged in
-  if (!user) {
-    return <Navigate to="/login" replace />
+  const roles = keycloak.tokenParsed?.realm_access?.roles || []
+
+  // If role not allowed → redirect
+  if (allowedRole && !roles.includes(allowedRole)) {
+    return <Navigate to="/" replace />
   }
 
-  // ❌ Role mismatch
-  if (role !== allowedRole) {
-    return <Navigate to="/login" replace />
-  }
-
-  // ✅ Allowed
   return children
 }
 
+export default ProtectedRoute
