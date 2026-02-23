@@ -17,10 +17,10 @@ export default function AdminAttendance() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0])
   const [search, setSearch] = useState("")
   const [attendance, setAttendance] = useState([])
-  const [totalInterns, setTotalInterns] = useState(0) // ✅ NEW
+  const [totalInterns, setTotalInterns] = useState(0)
   const [loading, setLoading] = useState(true)
 
-  // 🔹 Fetch attendance for selected date
+  /* 🔹 FETCH ATTENDANCE */
   const fetchAttendance = async () => {
     setLoading(true)
 
@@ -31,7 +31,6 @@ export default function AdminAttendance() {
         status,
         check_in,
         check_out,
-        firebase_uid,
         interns (
           name,
           email
@@ -39,20 +38,24 @@ export default function AdminAttendance() {
       `)
       .eq("date", date)
 
-    if (!error) {
+    if (error) {
+      console.error("Attendance fetch error:", error)
+    } else {
       setAttendance(data || [])
     }
 
     setLoading(false)
   }
 
-  // 🔹 Fetch TOTAL interns (from interns table)
+  /* 🔹 FETCH TOTAL INTERNS */
   const fetchTotalInterns = async () => {
-    const { count } = await supabase
+    const { count, error } = await supabase
       .from("interns")
       .select("*", { count: "exact", head: true })
 
-    setTotalInterns(count || 0)
+    if (!error) {
+      setTotalInterns(count || 0)
+    }
   }
 
   useEffect(() => {
@@ -60,19 +63,20 @@ export default function AdminAttendance() {
     fetchTotalInterns()
   }, [date])
 
-  // 🔍 Search filter
+  /* 🔍 SEARCH FILTER */
   const filteredAttendance = attendance.filter(record =>
     record.interns?.name?.toLowerCase().includes(search.toLowerCase()) ||
     record.interns?.email?.toLowerCase().includes(search.toLowerCase())
   )
 
-  // 📊 Stats (FIXED)
+  /* 📊 STATS */
   const presentCount = attendance.filter(a => a.status === "Present").length
-  const absentCount = totalInterns - presentCount
+  const absentCount = Math.max(totalInterns - presentCount, 0)
 
   return (
     <AdminLayout>
       <div className="space-y-6">
+
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Attendance Tracking</h1>
           <p className="text-muted-foreground mt-1.5">
@@ -80,12 +84,14 @@ export default function AdminAttendance() {
           </p>
         </div>
 
+        {/* STATS */}
         <div className="grid gap-4 md:grid-cols-3">
           <StatCard title="Total Interns" value={totalInterns} icon={Calendar} />
-          <StatCard title="Present" value={presentCount} icon={CheckCircle2} color="green" />
-          <StatCard title="Absent" value={absentCount} icon={XCircle} color="red" />
+          <StatCard title="Present" value={presentCount} icon={CheckCircle2} variant="green" />
+          <StatCard title="Absent" value={absentCount} icon={XCircle} variant="red" />
         </div>
 
+        {/* SEARCH + DATE */}
         <div className="flex flex-col sm:flex-row gap-4">
           <Card className="p-4 flex-1">
             <div className="relative">
@@ -108,10 +114,12 @@ export default function AdminAttendance() {
           </Card>
         </div>
 
+        {/* TABLE */}
         <Card>
           <CardHeader>
             <CardTitle>Attendance Records</CardTitle>
           </CardHeader>
+
           <CardContent>
             <div className="rounded-md border">
               <Table>
@@ -126,6 +134,7 @@ export default function AdminAttendance() {
                 </TableHeader>
 
                 <TableBody>
+
                   {loading && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center">
@@ -157,31 +166,41 @@ export default function AdminAttendance() {
                       <TableCell>{record.check_out || "-"}</TableCell>
                     </TableRow>
                   ))}
+
                 </TableBody>
               </Table>
             </div>
           </CardContent>
         </Card>
+
       </div>
     </AdminLayout>
   )
 }
 
-/* ---------- UI Helpers ---------- */
+/* ---------- UI HELPERS ---------- */
 
-const StatCard = ({ title, value, icon: Icon, color }) => (
-  <Card>
-    <CardHeader className="flex flex-row items-center justify-between pb-2">
-      <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <Icon className={`h-4 w-4 text-${color ?? "muted-foreground"}`} />
-    </CardHeader>
-    <CardContent>
-      <div className={`text-2xl font-bold text-${color ?? "foreground"}`}>
-        {value}
-      </div>
-    </CardContent>
-  </Card>
-)
+const StatCard = ({ title, value, icon: Icon, variant }) => {
+  const colorMap = {
+    green: "text-green-500",
+    red: "text-red-500",
+    default: "text-muted-foreground"
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className={`h-4 w-4 ${colorMap[variant] || colorMap.default}`} />
+      </CardHeader>
+      <CardContent>
+        <div className={`text-2xl font-bold ${colorMap[variant] || ""}`}>
+          {value}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 const StatusBadge = ({ status }) => (
   <span
@@ -204,6 +223,9 @@ const StatusBadge = ({ status }) => (
     )}
   </span>
 )
+
+
+
 
 
 
