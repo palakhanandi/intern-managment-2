@@ -1,152 +1,191 @@
+import { useEffect, useState } from "react"
 import InternLayout from "@/layouts/InternLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Award, Download, FileText, Calendar, Bell, CheckCircle2, Inbox } from "lucide-react"
+import { Award, Download, Calendar, CheckCircle2 } from "lucide-react"
+import { supabase } from "@/lib/supabase"
+import { useAuth } from "@/AuthContext"
 
 export default function InternCertificates() {
-  const certificates = [
-    {
-      id: 1,
-      title: "React Development Certificate",
-      course: "Complete React Development Course",
-      receivedDate: "2024-01-10",
-      initiatedDate: "2024-01-10",
-      status: "received",
-      isNew: false,
-    },
-    {
-      id: 2,
-      title: "Node.js Backend Certificate",
-      course: "Node.js and Express.js Mastery",
-      receivedDate: "2024-01-18",
-      initiatedDate: "2024-01-18",
-      status: "received",
-      isNew: true,
-    },
-    {
-      id: 3,
-      title: "UI/UX Design Certificate",
-      course: "UI/UX Design Fundamentals",
-      receivedDate: "2024-01-15",
-      initiatedDate: "2024-01-15",
-      status: "received",
-      isNew: false,
-    },
-  ]
+  const { user } = useAuth()
 
-  const receivedCount = certificates.filter(c => c.status === "received").length
-  const newCertificatesCount = certificates.filter(c => c.isNew).length
+  const [intern, setIntern] = useState(null)
+  const [certificates, setCertificates] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if (!user?.email) return
+
+        // 1️⃣ Fetch Intern by EMAIL
+        const { data: internData, error: internError } = await supabase
+          .from("interns")
+          .select("*")
+          .eq("email", user.email)
+          .single()
+
+        if (internError) throw internError
+
+        setIntern(internData)
+
+        // 2️⃣ Fetch Certificates
+        const { data: certData, error: certError } = await supabase
+          .from("certificates")
+          .select("*")
+          .eq("intern_id", internData.id)
+          .order("created_at", { ascending: false })
+
+        if (certError) throw certError
+
+        setCertificates(certData || [])
+
+      } catch (err) {
+        console.error("Error fetching certificates:", err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [user])
+
+  if (loading) {
+    return (
+      <InternLayout>
+        <p className="text-muted-foreground">Loading certificate...</p>
+      </InternLayout>
+    )
+  }
+
+  if (!intern) {
+    return (
+      <InternLayout>
+        <p className="text-muted-foreground">Intern not found</p>
+      </InternLayout>
+    )
+  }
+
+  const latestCertificate = certificates[0]
 
   return (
     <InternLayout>
       <div className="space-y-6">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">My Certificates</h1>
-              <p className="text-muted-foreground">
-                Certificates received from admin
-              </p>
-            </div>
-            {newCertificatesCount > 0 && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary">
-                <Bell className="h-4 w-4" />
-                <span className="text-sm font-medium">{newCertificatesCount} New</span>
-              </div>
-            )}
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            My Internship Certificate
+          </h1>
+          <p className="text-muted-foreground">
+            Certificate issued by admin
+          </p>
         </div>
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Certificates</CardTitle>
-              <Award className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Total Certificates</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{certificates.length}</div>
+              <div className="text-2xl font-bold">
+                {certificates.length}
+              </div>
             </CardContent>
           </Card>
+
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Received</CardTitle>
-              <Inbox className="h-4 w-4 text-green-500" />
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Status</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{receivedCount}</div>
+              <div
+                className={`text-2xl font-bold ${
+                  latestCertificate?.status === "sent"
+                    ? "text-green-600"
+                    : "text-yellow-600"
+                }`}
+              >
+                {latestCertificate?.status || "No Certificate"}
+              </div>
             </CardContent>
           </Card>
+
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">New Certificates</CardTitle>
-              <Bell className="h-4 w-4 text-blue-500" />
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Duration</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{newCertificatesCount}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {intern.duration}
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Certificates List */}
-        <div className="grid gap-4">
-          {certificates.map((cert) => (
-            <Card 
-              key={cert.id} 
-              className={`hover:shadow-lg transition-shadow ${cert.isNew ? 'border-primary border-2' : ''}`}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className={`h-16 w-16 rounded-lg flex items-center justify-center ${
-                      cert.isNew ? 'bg-primary/20' : 'bg-primary/10'
-                    }`}>
-                      <Award className={`h-8 w-8 ${cert.isNew ? 'text-primary' : 'text-primary'}`} />
-                    </div>
-                    <div className="flex-1">
+        {/* Certificate Card */}
+        {latestCertificate && (
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <div className="h-16 w-16 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Award className="h-8 w-8 text-primary" />
+                  </div>
+
+                  <div>
+                    <CardTitle className="text-xl">
+                      Internship Certificate
+                    </CardTitle>
+
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {intern.domain}
+                    </p>
+
+                    <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
-                        <CardTitle className="text-xl">{cert.title}</CardTitle>
-                        {cert.isNew && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary text-primary-foreground">
-                            New
-                          </span>
-                        )}
+                        <Calendar className="h-4 w-4" />
+                        <span>
+                          Issued Date: {latestCertificate.issued_date}
+                        </span>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">{cert.course}</p>
-                      <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <Inbox className="h-4 w-4" />
-                          <span>Received: {cert.receivedDate}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          <span>Initiated: {cert.initiatedDate}</span>
-                        </div>
-                      </div>
+                      <span>Duration: {intern.duration}</span>
                     </div>
                   </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3" />
-                    Received
-                  </span>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    Certificate sent by admin on {cert.receivedDate}
-                  </p>
-                  <Button>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Certificate
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
+                    latestCertificate.status === "sent"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-yellow-100 text-yellow-800"
+                  }`}
+                >
+                  <CheckCircle2 className="h-3 w-3" />
+                  {latestCertificate.status}
+                </span>
+              </div>
+            </CardHeader>
+
+            <CardContent className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Issued to {intern.name} ({intern.email})
+              </p>
+
+              <Button
+                disabled={!latestCertificate.pdf_url}
+                onClick={() =>
+                  window.open(latestCertificate.pdf_url, "_blank")
+                }
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download Certificate
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </InternLayout>
   )
 }
+
 
