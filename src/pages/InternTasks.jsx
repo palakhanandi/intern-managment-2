@@ -24,10 +24,11 @@ import {
 } from "@/components/ui/dialog"
 
 import { supabase } from "@/lib/supabase"
-import { auth } from "@/firebase"
-import { onAuthStateChanged } from "firebase/auth"
+import { useAuth } from "@/AuthContext"
 
 export default function InternTasks() {
+  const { user } = useAuth()
+
   const [tasks, setTasks] = useState([])
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
@@ -37,30 +38,37 @@ export default function InternTasks() {
   const [description, setDescription] = useState("")
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) fetchInternAndTasks(user.uid)
-      else setLoading(false)
-    })
-    return () => unsubscribe()
-  }, [])
+    if (user?.email) {
+      fetchInternAndTasks(user.email)
+    }
+  }, [user])
 
-  const fetchInternAndTasks = async (firebaseUid) => {
-    const { data: intern } = await supabase
+  const fetchInternAndTasks = async (email) => {
+    setLoading(true)
+
+    // ✅ Get intern by email
+    const { data: intern, error: internError } = await supabase
       .from("interns")
       .select("id")
-      .eq("firebase_uid", firebaseUid)
-      .maybeSingle()
+      .eq("email", email)
+      .single()
 
-    if (!intern) {
+    if (internError || !intern) {
+      console.error("Intern fetch error:", internError)
       setLoading(false)
       return
     }
 
-    const { data } = await supabase
+    // ✅ Get tasks by intern_id
+    const { data, error } = await supabase
       .from("tasks")
       .select("id, title, due_date, completed, description")
       .eq("intern_id", intern.id)
       .order("due_date")
+
+    if (error) {
+      console.error("Tasks fetch error:", error)
+    }
 
     setTasks(data || [])
     setLoading(false)
@@ -116,7 +124,7 @@ export default function InternTasks() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Total Tasks: {tasks.length}</CardTitle>
+            <CardTitle>Total Tasks: {filteredTasks.length}</CardTitle>
           </CardHeader>
 
           <CardContent>
@@ -148,27 +156,24 @@ export default function InternTasks() {
                         )}
                       </TableCell>
 
-                      {/* DESCRIPTION */}
-                      {/* DESCRIPTION */}
+                      {/* DESCRIPTION BUTTON */}
                       <TableCell>
                         <Button
-  size="sm"
-  className={
-    task.description
-      ? "bg-blue-600 hover:bg-blue-700 text-white"
-      : "bg-emerald-600 hover:bg-emerald-700 text-white"
-  }
-  onClick={() => {
-    setSelectedTask(task)
-    setDescription(task.description || "")
-    setOpen(true)
-  }}
->
-  {task.description ? "Edit" : "Add"}
-</Button>
-
+                          size="sm"
+                          className={
+                            task.description
+                              ? "bg-blue-600 hover:bg-blue-700 text-white"
+                              : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                          }
+                          onClick={() => {
+                            setSelectedTask(task)
+                            setDescription(task.description || "")
+                            setOpen(true)
+                          }}
+                        >
+                          {task.description ? "Edit" : "Add"}
+                        </Button>
                       </TableCell>
-
 
                       {/* ACTION */}
                       <TableCell className="text-right">
@@ -210,4 +215,5 @@ export default function InternTasks() {
     </InternLayout>
   )
 }
+
 
